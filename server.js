@@ -3,6 +3,7 @@ const axios = require("axios");
 const cors = require("cors");
 const fs = require("fs");
 require("dotenv").config();
+const TOKEN_FILE = "tokens.json";
 
 const app = express();
 app.use(cors());
@@ -14,6 +15,9 @@ const REDIRECT_URI = "http://localhost:3000/callback";
 let accessToken = null;
 let refreshToken = null;
 let tokenExpiration = null; // Timestamp when token expires
+
+loadTokens();
+console.log("📂 Loaded saved tokens:", { accessToken, refreshToken, tokenExpiration });
 
 function getAccessToken() {
     return accessToken;
@@ -52,42 +56,46 @@ app.get("/login", (req, res) => {
 
 // 🎵 Handle Spotify callback & save tokens
 app.get("/callback", async (req, res) => {
-  const code = req.query.code;
-  if (!code) return res.json({ error: "Missing authorization code" });
-
-  try {
-    const response = await axios.post(
-      "https://accounts.spotify.com/api/token",
-      new URLSearchParams({
-        grant_type: "authorization_code",
-        code,
-        redirect_uri: REDIRECT_URI,
-        client_id: CLIENT_ID,
-        client_secret: CLIENT_SECRET,
-      }),
-      { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
-    );
-
-    accessToken = response.data.access_token;
-    refreshToken = response.data.refresh_token;
-    tokenExpiration = Date.now() + response.data.expires_in * 1000; // Set expiration time
-
-    console.log("✅ Access Token:", accessToken);
-    console.log("🔄 Refresh Token:", refreshToken);
-
-    const savePodcastsToFile = require("./list_of_podcasts");
-    savePodcastsToFile(accessToken);
-    
-    res.json({
-      access_token: accessToken,
-      refresh_token: refreshToken,
-      expires_in: response.data.expires_in,
-    });
-  } catch (error) {
-    console.error("❌ Error Getting Access Token:", error.response?.data || error.message);
-    res.status(500).json({ error: "Failed to get access token", details: error.response?.data || error.message });
-  }
+    const code = req.query.code;
+    if (!code) return res.json({ error: "Missing authorization code" });
+  
+    try {
+      const response = await axios.post(
+        "https://accounts.spotify.com/api/token",
+        new URLSearchParams({
+          grant_type: "authorization_code",
+          code,
+          redirect_uri: REDIRECT_URI,
+          client_id: CLIENT_ID,
+          client_secret: CLIENT_SECRET,
+        }),
+        { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
+      );
+  
+      accessToken = response.data.access_token;
+      refreshToken = response.data.refresh_token;
+      tokenExpiration = Date.now() + response.data.expires_in * 1000; // Set expiration time
+  
+      // ✅ Save tokens to file
+      saveTokens();
+  
+      console.log("✅ Access Token:", accessToken);
+      console.log("🔄 Refresh Token:", refreshToken);
+  
+      const savePodcastsToFile = require("./list_podcasts");
+      savePodcastsToFile(accessToken);
+  
+      res.json({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+        expires_in: response.data.expires_in,
+      });
+    } catch (error) {
+      console.error("❌ Error Getting Access Token:", error.response?.data || error.message);
+      res.status(500).json({ error: "Failed to get access token", details: error.response?.data || error.message });
+    }
 });
+  
 
 // 🎵 Function to refresh the access token
 async function refreshAccessToken() {
@@ -110,7 +118,7 @@ async function refreshAccessToken() {
 
     accessToken = response.data.access_token;
     tokenExpiration = Date.now() + response.data.expires_in * 1000; // Update expiration time
-
+    saveTokens();
     console.log("🔄 Token refreshed successfully!");
     return accessToken;
   } catch (error) {
@@ -121,8 +129,21 @@ async function refreshAccessToken() {
 
 
 // here is the podcast list
-const pod_file = require("./list_of_podcasts");
+const pod_file = require("./list_podcasts");
 pod_file(accessToken);
+
+function saveTokens() {
+    fs.writeFileSync(TOKEN_FILE, JSON.stringify({ accessToken, refreshToken, tokenExpiration }, null, 2));
+}
+function loadTokens() {
+    if (fs.existsSync(TOKEN_FILE)) {
+      const data = JSON.parse(fs.readFileSync(TOKEN_FILE, "utf-8"));
+      accessToken = data.accessToken;
+      refreshToken = data.refreshToken;
+      tokenExpiration = data.tokenExpiration;
+    }
+}
+
 
 // 🎵 Middleware to ensure access token is fresh
 async function ensureAccessToken(req, res, next) {
