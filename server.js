@@ -16,16 +16,37 @@ let refreshToken = null;
 let tokenExpiration = null; // Timestamp when token expires
 
 function getAccessToken() {
-  return accessToken;
+    return accessToken;
 }
-module.exports = {accessToken};
+module.exports = { getAccessToken };
+  
+const scopes = [
+    "user-read-email",
+    "user-read-private",
+    "user-library-read",
+    "user-library-modify",
+    "playlist-read-private",
+    "playlist-read-collaborative",
+    "playlist-modify-public",
+    "playlist-modify-private",
+    "user-read-playback-state",
+    "user-modify-playback-state",
+    "user-read-currently-playing",
+    "user-read-recently-played",
+    "user-top-read",
+    "app-remote-control",
+    "streaming",
+    "user-follow-read",
+    "user-follow-modify"
+];
+  
 
 // Redirect user to Spotify login
 app.get("/login", (req, res) => {
   const scope = "user-read-email user-top-read user-library-read";
   const authUrl = `https://accounts.spotify.com/authorize?client_id=${CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(
     REDIRECT_URI
-  )}&scope=${encodeURIComponent(scope)}`;
+  )}&scope=${scopes.join("%20")}`;
   res.redirect(authUrl);
 });
 
@@ -54,6 +75,9 @@ app.get("/callback", async (req, res) => {
     console.log("✅ Access Token:", accessToken);
     console.log("🔄 Refresh Token:", refreshToken);
 
+    const savePodcastsToFile = require("./list_of_podcasts");
+    savePodcastsToFile(accessToken);
+    
     res.json({
       access_token: accessToken,
       refresh_token: refreshToken,
@@ -97,8 +121,8 @@ async function refreshAccessToken() {
 
 
 // here is the podcast list
-
-
+const pod_file = require("./list_of_podcasts");
+pod_file(accessToken);
 
 // 🎵 Middleware to ensure access token is fresh
 async function ensureAccessToken(req, res, next) {

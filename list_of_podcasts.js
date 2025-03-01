@@ -1,47 +1,58 @@
-const { accessToken } = require("./server"); // Import the variable
-console.log("🎧 Podcast List:", accessToken);
+const fs = require("fs");
+const axios = require("axios");
 
+const { getAccessToken } = require("./server");
 
-// list of recently played tracks
 async function getRecentlyPlayed(accessToken) {
     try {
-      const response = await axios.get(
-        "https://api.spotify.com/v1/me/player/recently-played?limit=50",
-        {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        }
-      );
-  
-      return response.data.items; // Array of recently played tracks (including podcasts)
+        const response = await axios.get(
+            "https://api.spotify.com/v1/me/player/recently-played?limit=50",
+            {
+                headers: { Authorization: `Bearer ${accessToken}` },
+            }
+        );
+        return response.data.items;
     } catch (error) {
-      console.error("❌ Error fetching recently played:", error.response?.data || error.message);
-      return [];
+        console.error("❌ Error fetching recently played:", error.response?.data || error.message);
+        return [];
+    }
+}
+
+async function getSavedPodcastEpisodes(accessToken) {
+    try {
+        const response = await axios.get(
+            "https://api.spotify.com/v1/me/episodes?limit=50",
+            {
+                headers: { Authorization: `Bearer ${accessToken}` },
+            }
+        );
+
+        const podcasts = response.data.items.map((item) => ({
+            name: item.episode.name, // Episode title
+            podcast: item.episode.show.name, // Show name
+            episode_url: item.episode.external_urls.spotify, // Link to episode
+            release_date: item.episode.release_date, // When released
+        }));
+
+        return podcasts;
+    } catch (error) {
+        console.error("❌ Error fetching saved podcasts:", error.response?.data || error.message);
+        return [];
     }
 }
 
 
-// only podcasts listened to
-async function getRecentlyPlayedPodcasts(accessToken) {
-    const items = await getRecentlyPlayed(accessToken);
-  
-    const podcasts = items
-      .filter((item) => item.context && item.context.type === "show")
-      .map((item) => ({
-        name: item.track.name,
-        podcast: item.context.href, // Link to the podcast show
-        episode_url: item.track.external_urls.spotify,
-        played_at: item.played_at,
-      }));
-  
-    return podcasts;
-}
+async function savePodcastsToFile() {
+    const accessToken = getAccessToken(); // Get the latest access token
 
+    if (!accessToken) {
+        console.error("❌ No access token available. Please log in.");
+        return;
+    }
 
-async function savePodcastsToFile(accessToken) {
-    const podcasts = await getRecentlyPlayedPodcasts(accessToken);
-  
+    const podcasts = await getSavedPodcastEpisodes(accessToken);
     fs.writeFileSync("recently_played_podcasts.json", JSON.stringify(podcasts, null, 2));
-  
     console.log("✅ Podcast data saved to recently_played_podcasts.json");
 }
-  
+
+module.exports = savePodcastsToFile;
