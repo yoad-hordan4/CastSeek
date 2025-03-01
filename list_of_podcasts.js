@@ -3,20 +3,7 @@ const axios = require("axios");
 
 const { getAccessToken } = require("./server");
 
-async function getRecentlyPlayed(accessToken) {
-    try {
-        const response = await axios.get(
-            "https://api.spotify.com/v1/me/player/recently-played?limit=50",
-            {
-                headers: { Authorization: `Bearer ${accessToken}` },
-            }
-        );
-        return response.data.items;
-    } catch (error) {
-        console.error("❌ Error fetching recently played:", error.response?.data || error.message);
-        return [];
-    }
-}
+
 
 async function getSavedPodcastEpisodes(accessToken) {
     try {
