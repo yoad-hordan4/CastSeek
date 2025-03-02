@@ -42,4 +42,22 @@ async function savePodcastsToFile() {
     console.log("✅ Podcast data saved to recently_played_podcasts.json");
 }
 
+const { sql, connectDB } = require("./db");
+
+async function savePodcastsToDB(podcasts) {
+  try {
+    await sql.connect();
+    for (const podcast of podcasts) {
+      await sql.query`INSERT INTO podcasts (name, episode_title, release_date) 
+                      VALUES (${podcast.name}, ${podcast.episode_title}, ${podcast.release_date})`;
+    }
+    console.log("✅ Podcasts saved to database!");
+  } catch (err) {
+    console.error("❌ Error saving podcasts:", err);
+  }
+}
+
+module.exports = savePodcastsToDB;
+
+
 module.exports = savePodcastsToFile;

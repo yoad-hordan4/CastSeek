@@ -45,6 +45,27 @@ const scopes = [
 ];
   
 
+const { sql, connectDB } = require("./db");
+
+// Function to save tokens
+async function saveTokensToDB(accessToken, refreshToken, tokenExpiration) {
+    try {
+        await sql.connect();
+        await sql.query`INSERT INTO tokens (access_token, refresh_token, token_expiration) 
+                    VALUES (${accessToken}, ${refreshToken}, ${tokenExpiration})`;
+        console.log("✅ Tokens saved to database!");
+    } catch (err) {
+        console.error("❌ Error saving tokens:", err);
+    }
+}
+
+// Call saveTokensToDB inside the callback route
+app.get("/callback", async (req, res) => {
+    // After getting tokens from Spotify
+    await saveTokensToDB(accessToken, refreshToken, tokenExpiration);
+});
+
+
 // Redirect user to Spotify login
 app.get("/login", (req, res) => {
   const scope = "user-read-email user-top-read user-library-read";
