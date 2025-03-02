@@ -3,7 +3,20 @@ const axios = require("axios");
 
 const { getAccessToken } = require("./server");
 
-
+async function getRecentlyPlayed(accessToken) {
+    try {
+        const response = await axios.get(
+            "https://api.spotify.com/v1/me/player/recently-played?limit=50",
+            {
+                headers: { Authorization: `Bearer ${accessToken}` },
+            }
+        );
+        return response.data.items;
+    } catch (error) {
+        console.error("❌ Error fetching recently played:", error.response?.data || error.message);
+        return [];
+    }
+}
 
 async function getSavedPodcastEpisodes(accessToken) {
     try {
@@ -42,7 +55,7 @@ async function savePodcastsToFile() {
     console.log("✅ Podcast data saved to recently_played_podcasts.json");
 }
 
-const { sql, connectDB } = require("./db");
+/*const { sql, connectDB } = require("./db");
 
 async function savePodcastsToDB(podcasts) {
   try {
@@ -58,6 +71,6 @@ async function savePodcastsToDB(podcasts) {
 }
 
 module.exports = savePodcastsToDB;
-
+*/
 
 module.exports = savePodcastsToFile;
