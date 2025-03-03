@@ -4,7 +4,7 @@ import requests
 file_pod_list = "recently_played_podcasts.json"
 
 def get_access_token():
-    """Fetch the access token from the Node.js server"""
+    #Fetch the access token from the Node.js server
     try:
         response = requests.get("http://localhost:3000/access-token")
         response.raise_for_status()
@@ -15,6 +15,7 @@ def get_access_token():
 
 
 def load_podcasts(file_path):
+    #Load the podcast history from a JSON file.
     try:
         with open(file_path, "r") as file:
             podcasts = json.load(file)
@@ -25,15 +26,15 @@ def load_podcasts(file_path):
 
 
 def names_podcasts(podcasts):
-    return [podcast['name'] for podcast in podcasts]
+    #Extract podcast names from the last 10 episodes.
+    return [podcast['name'] for podcast in podcasts][:10]  # Get last 10 (newest first)
 
 
 SPOTIFY_API_URL = "https://api.spotify.com/v1/search"
 
 def get_recommendations(podcast_name):
-    """Fetch similar podcasts from Spotify API."""
-    
-    access_token = get_access_token()  # Get the latest token
+    #Fetch similar podcasts from Spotify API.
+    access_token = get_access_token()  
     if not access_token:
         print("❌ No access token available. Please log in.")
         return []
@@ -54,25 +55,43 @@ def get_recommendations(podcast_name):
         response.raise_for_status()
         data = response.json()
 
-        recommendations = [
+        return [
             show["name"] for show in data.get("shows", {}).get("items", [])
         ]
-
-        return recommendations if recommendations else ["No recommendations found."]
     
     except requests.exceptions.RequestException as e:
         print(f"❌ Error fetching recommendations: {e}")
         return []
-    
-    
+
+
+def get_combined_recommendations(podcast_names):
+    all_recommendations = set()  # Use a set to avoid duplicates
+
+    for podcast in podcast_names:
+        print(f"\n🔍 Getting recommendations for: {podcast}")
+        recommendations = get_recommendations(podcast)
+        all_recommendations.update(recommendations)  # Add to set
+
+    return list(all_recommendations)  # Convert back to list
 
 
 def main():
     podcasts = load_podcasts(file_pod_list)
-    names = names_podcasts(podcasts)
-    recommendations = get_recommendations(names[1])
-    print("you listened to", names[1], "We think you'll like these:")
-    print("\n".join(recommendations))
+    podcast_names = names_podcasts(podcasts)
+
+    if not podcast_names:
+        print("❌ No podcast history found.")
+        return
+
+    print("\n🎧 Your last 10 played podcasts:")
+    for name in podcast_names:
+        print(f"- {name}")
+
+    recommendations = get_combined_recommendations(podcast_names)
+
+    print("\n🔥 Based on your recent listens, you might like these:")
+    print("\n".join(recommendations) if recommendations else "No recommendations found.")
+
 
 if __name__ == "__main__":
     main()
