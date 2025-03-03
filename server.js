@@ -61,6 +61,14 @@ app.get("/login", (req, res) => {
     res.redirect(authUrl);
 });
 
+app.get("/access-token", (req, res) => {
+  if (!accessToken) {
+      return res.status(401).json({ error: "No access token available" });
+  }
+  res.json({ access_token: accessToken });
+});
+
+
 // 🎵 Handle Spotify callback & save tokens
 app.get("/callback", async (req, res) => {
     const code = req.query.code;
