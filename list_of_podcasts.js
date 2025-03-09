@@ -32,6 +32,7 @@ async function getSavedPodcastEpisodes(accessToken) {
             podcast: item.episode.show.name, // Show name
             episode_url: item.episode.external_urls.spotify, // Link to episode
             release_date: item.episode.release_date, // When released
+            description: item.episode.description // Adding the description field
         }));
 
         return podcasts;
@@ -55,6 +56,8 @@ async function savePodcastsToFile() {
     console.log("✅ Podcast data saved to recently_played_podcasts.json");
 }
 
+module.exports = savePodcastsToFile;
+
 /*const { sql, connectDB } = require("./db");
 
 async function savePodcastsToDB(podcasts) {
@@ -72,5 +75,3 @@ async function savePodcastsToDB(podcasts) {
 
 module.exports = savePodcastsToDB;
 */
-
-module.exports = savePodcastsToFile;
