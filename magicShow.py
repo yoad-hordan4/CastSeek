@@ -1,5 +1,11 @@
 import json
 import requests
+import requests
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+SPOTIFY_API_URL = "https://api.spotify.com/v1/search"
 
 file_pod_list = "recently_played_podcasts.json"
 
@@ -33,10 +39,8 @@ def names_podcasts(podcasts):
 SPOTIFY_API_URL = "https://api.spotify.com/v1/search"
 
 def get_recommendations(podcast_name):
-    #Fetch similar podcasts from Spotify API.
-    access_token = get_access_token()  
+    access_token = get_access_token()
     if not access_token:
-        print("❌ No access token available. Please log in.")
         return []
 
     headers = {
@@ -63,17 +67,14 @@ def get_recommendations(podcast_name):
         print(f"❌ Error fetching recommendations: {e}")
         return []
 
-
 def get_combined_recommendations(podcast_names):
-    all_recommendations = set()  # Use a set to avoid duplicates
+    all_recommendations = set()
 
     for podcast in podcast_names:
-        print(f"\n🔍 Getting recommendations for: {podcast}")
         recommendations = get_recommendations(podcast)
-        all_recommendations.update(recommendations)  # Add to set
+        all_recommendations.update(recommendations)
 
-    return list(all_recommendations)  # Convert back to list
-
+    return list(all_recommendations)
 
 def main():
     podcasts = load_podcasts(file_pod_list)
