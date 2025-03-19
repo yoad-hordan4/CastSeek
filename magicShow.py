@@ -33,7 +33,7 @@ def load_podcasts(file_path):
 
 def names_podcasts(podcasts):
     #Extract podcast names from the last 10 episodes.
-    return [podcast['name'] for podcast in podcasts][:10]  # Get last 10 (newest first)
+    return [podcast['podcast_name'] for podcast in podcasts][:10]  # Get last 10 (newest first)
 
 
 SPOTIFY_API_URL = "https://api.spotify.com/v1/search"
