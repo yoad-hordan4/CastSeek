@@ -1,8 +1,8 @@
 import json
 import requests
 import requests
-import os
 from dotenv import load_dotenv
+import re
 
 load_dotenv()
 SPOTIFY_API_URL = "https://api.spotify.com/v1/search"
@@ -70,11 +70,20 @@ def get_recommendations(podcast_name):
 def get_combined_recommendations(podcast_names):
     all_recommendations = set()
 
-    for podcast in podcast_names:
+    for podcast in podcast_names:  # Get recommendations for each podcast
         recommendations = get_recommendations(podcast)
         all_recommendations.update(recommendations)
 
-    return list(all_recommendations)
+    recommendations = list(all_recommendations)
+    
+    # Define regex pattern to allow only English letters, numbers, spaces, and certain symbols
+    pattern = re.compile(r'[^a-zA-Z0-9\s!@#$%^&*(),.?":{}|<>]')
+
+    # Use list comprehension to filter out non-matching podcast names
+    recommendations = [podcast for podcast in recommendations if not pattern.search(podcast)]
+
+    return recommendations[:10]  # Return first 10 recommendations
+
 
 def main():
     podcasts = load_podcasts(file_pod_list)
