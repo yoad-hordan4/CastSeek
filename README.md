@@ -1,2 +1,0 @@
-# CastSeek
-spotify ai recommender
