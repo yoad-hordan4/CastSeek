@@ -25,6 +25,18 @@ REDIRECT_URI = os.getenv("REDIRECT_URI")
 tokens = {}
 
 
+def open_login_page():
+    url = "http://localhost:3000/login"
+    webbrowser.open(url)
+    
+    
+@app.get("/open-login")
+def trigger_login():
+    """Opens the login page in the browser when this endpoint is accessed."""
+    open_login_page()
+    return {"message": "Login page opened in browser"}
+
+
 def get_access_token():
      """Fetch the access token from the Node.js server."""
      try:
