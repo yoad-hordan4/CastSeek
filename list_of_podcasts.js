@@ -41,7 +41,6 @@ async function getSavedPodcastEpisodes(accessToken) {
             const showDetails = await getShowDetails(showId, accessToken);
             if (!showDetails) continue;
 
-            const listenNotesStats = await getPodcastStatsFromListenNotes(showDetails.show_name) || {};
 
             podcasts.push({
                 episode_title: episode.name,
@@ -52,7 +51,6 @@ async function getSavedPodcastEpisodes(accessToken) {
                 episode_url: episode.external_urls.spotify,
                 release_date: episode.release_date,
                 popularity: showDetails.popularity,
-                estimated_listeners: listenNotesStats.estimated_listeners || "Unknown",
             });
         }
 
@@ -72,6 +70,7 @@ async function savePodcastsToFile() {
         }
 
         const podcasts = await getSavedPodcastEpisodes(accessToken);
+        console.log("🎵 Fetched", podcasts.length, "saved podcasts --------");
         fs.writeFileSync("recently_played_podcasts.json", JSON.stringify(podcasts, null, 2));
         console.log("✅ Podcast data saved to recently_played_podcasts.json");
     } catch (error) {
@@ -79,22 +78,5 @@ async function savePodcastsToFile() {
     }
 }
 
-async function getPodcastStatsFromListenNotes(podcastName) {
-    try {
-        const response = await axios.get(`https://listen-api.listennotes.com/api/v2/search`, {
-            headers: { "X-ListenAPI-Key": "YOUR_LISTEN_NOTES_API_KEY" },
-            params: { q: podcastName, type: "podcast" },
-        });
-
-        if (response.data.results.length > 0) {
-            return {
-                estimated_listeners: response.data.results[0].listens_per_week || "Unknown",
-            };
-        }
-    } catch (error) {
-        console.error(`❌ Error fetching stats from Listen Notes:`, error.message);
-        return null;
-    }
-}
 
 module.exports = savePodcastsToFile;

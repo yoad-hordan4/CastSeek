@@ -5,6 +5,7 @@ import base64
 import os
 from fastapi import FastAPI, HTTPException
 from dotenv import load_dotenv
+import webbrowser
 
 load_dotenv()
 
@@ -23,31 +24,16 @@ REDIRECT_URI = os.getenv("REDIRECT_URI")
 # 🔹 Store tokens in memory (use a database in production)
 tokens = {}
 
-def fetch_access_token():
-    """Fetch a new Spotify access token using refresh token"""
-    if "refresh_token" not in tokens:
-        raise HTTPException(status_code=401, detail="User needs to log in")
-
-    auth_header = base64.b64encode(f"{CLIENT_ID}:{CLIENT_SECRET}".encode()).decode()
-    response = requests.post(
-        TOKEN_URL,
-        data={"grant_type": "refresh_token", "refresh_token": tokens["refresh_token"]},
-        headers={"Authorization": f"Basic {auth_header}", "Content-Type": "application/x-www-form-urlencoded"},
-    )
-
-    if response.status_code != 200:
-        raise HTTPException(status_code=500, detail="Failed to refresh access token")
-
-    new_tokens = response.json()
-    tokens["access_token"] = new_tokens["access_token"]
-    return tokens["access_token"]
-
 
 def get_access_token():
-    """Retrieve the current access token or refresh it if expired"""
-    if "access_token" in tokens:
-        return tokens["access_token"]
-    return fetch_access_token()
+     """Fetch the access token from the Node.js server."""
+     try:
+         response = requests.get("http://localhost:3000/access-token")
+         response.raise_for_status()
+         return response.json().get("access_token")
+     except requests.exceptions.RequestException as e:
+         print(f"❌ Error fetching access token: {e}")
+         return None
 
 
 def load_podcasts():
