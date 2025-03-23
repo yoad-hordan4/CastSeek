@@ -1,7 +1,7 @@
 import json
 import requests
 import re
-import base64
+import time
 import os
 from fastapi import FastAPI, HTTPException
 from dotenv import load_dotenv
@@ -18,6 +18,8 @@ TOKEN_URL = "https://accounts.spotify.com/api/token"
 PODCAST_FILE = "recently_played_podcasts.json"
 
 # 🔹 Load credentials from .env
+NODE_SERVER_URL = os.getenv("NODE_SERVER_URL")
+FASTAPI_URL = os.getenv("FASTAPI_URL")
 CLIENT_ID = os.getenv("CLIENT_ID")
 CLIENT_SECRET = os.getenv("CLIENT_SECRET")
 REDIRECT_URI = os.getenv("REDIRECT_URI")
@@ -119,13 +121,11 @@ def get_combined_recommendations(podcast_names, limit=10):
 
 @app.get("/")
 def root():
-    """Root endpoint to check if the API is running."""
     return {"message": "Welcome to the CastSeek API!"}
 
 
 @app.get("/recent-podcasts")
 def recent_podcasts():
-    """Endpoint to get the user's last 10 played podcasts."""
     podcasts = load_podcasts()
     if not podcasts:
         raise HTTPException(status_code=404, detail="No podcast history found.")
@@ -135,7 +135,6 @@ def recent_podcasts():
 
 @app.get("/recommendations")
 def recommendations():
-    """Endpoint to get podcast recommendations based on recent listens."""
     podcasts = load_podcasts()
     podcast_names = extract_podcast_names(podcasts)
 
@@ -144,3 +143,49 @@ def recommendations():
 
     recs = get_combined_recommendations(podcast_names)
     return {"recommendations": recs}
+
+
+
+
+@app.get("/full-recommendations")
+def full_recommendations():
+    """Runs the entire process: start server, login, get podcasts, get recommendations."""
+
+    # 1️⃣ Start Node.js server
+    try:
+        subprocess.Popen(["node", "server.js"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        time.sleep(3)  # Wait a few seconds to ensure the server starts
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error starting Node.js server: {e}")
+
+    # 2️⃣ Open login page
+    webbrowser.open(f"{NODE_SERVER_URL}/login")
+    time.sleep(10)  # Give the user time to log in manually
+
+    # 3️⃣ Fetch recent podcasts
+    recent_podcasts_url = f"{FASTAPI_URL}/recent-podcasts"
+    print(f"Fetching recent podcasts from: {recent_podcasts_url}")  # Debugging
+
+    try:
+        response = requests.get(recent_podcasts_url)
+        response.raise_for_status()
+        recent_podcasts = response.json()
+    except requests.exceptions.RequestException as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching recent podcasts: {e}")
+
+    # 4️⃣ Fetch recommendations
+    recommendations_url = f"{FASTAPI_URL}/recommendations"
+    print(f"Fetching recommendations from: {recommendations_url}")  # Debugging
+
+    try:
+        response = requests.get(recommendations_url)
+        response.raise_for_status()
+        recommendations = response.json()
+    except requests.exceptions.RequestException as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching recommendations: {e}")
+
+    return {
+        "message": "Full recommendation process completed!",
+        "recent_podcasts": recent_podcasts,
+        "recommendations": recommendations
+    }
