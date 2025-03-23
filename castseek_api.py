@@ -6,6 +6,7 @@ import os
 from fastapi import FastAPI, HTTPException
 from dotenv import load_dotenv
 import webbrowser
+import subprocess
 
 load_dotenv()
 
@@ -23,6 +24,18 @@ REDIRECT_URI = os.getenv("REDIRECT_URI")
 
 # 🔹 Store tokens in memory (use a database in production)
 tokens = {}
+
+
+
+@app.get("/start-node-server")
+def start_node_server():
+    """Start the Node.js server (server.js) automatically."""
+    try:
+        subprocess.Popen(["node", "server.js"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        return {"message": "Node.js server started successfully"}
+    except Exception as e:
+        return {"error": str(e)}
+    
 
 
 def open_login_page():
